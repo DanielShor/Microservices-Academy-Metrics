@@ -94,7 +94,11 @@ spec:
             - name: STATSD_PORT
               value: "{{ .Values.converter.statsdPort }}"
             - name: STATSD_PROTOCOL
-              value: "{{ .Values.converter.statsdProtocol }}"
+              value: "{{ .Values.converter.statsdProtocol }}"  
+            {{- if .Values.converter.defaultMdmNamespace }}
+            - name: GENEVA_DEFAULT_MDM_NAMESPACE
+              value: "{{ .Values.converter.defaultMdmNamespace }}"
+            {{- end }}
             {{- if .Values.converter.debugLogs }}
             - name: DEBUG_LOG
               value: "1"
