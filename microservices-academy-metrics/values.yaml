@@ -4,6 +4,7 @@ prom-mdm-converter:
   # Declare variables to be passed into your templates.
 
   replicaCount: 2
+  aadpodidbinding: cluster-identity
 
   # init containers
   genevaSecrets:
@@ -14,8 +15,11 @@ prom-mdm-converter:
   # See https://github.com/Hexadite/acs-keyvault-agent
   kvagent:
     image:
-      repository: linuxgeneva-microsoft.azurecr.io/acskeyvaultagent
-      tag: master_11
+      # Put your acr in the following line
+      #################
+      repository: infrastructurecourse.azurecr.io/acskeyvaultagent
+      #################
+      tag: master_19
       pullPolicy: Always
     certsPath: /secrets/
     authorityServer: https://login.microsoftonline.com/
@@ -27,7 +31,7 @@ prom-mdm-converter:
 
     # Put your cert name in the following line
     #################
-    cert: pfx-wcd-mds-gcs-stg::cert.pem:key.pem
+    cert: pfx-wcd-mds-gcs-stg::mdm-cert.pem:mdm-key.pem
     #################
     # Put your Key Vault URL in the following line
     #################
@@ -37,8 +41,11 @@ prom-mdm-converter:
     resources: {}
 
   image:
-    repository: kubernetesshared.azurecr.io/shared/prom-mdm-converter
-    tag: latest
+    # Put your acr in the following line
+    #################
+    repository: infrastructurecourse.azurecr.io/prom-mdm-converter
+    #################
+    tag: 2.0.master.20200115.1
     pullPolicy: Always
     pullSecret:
       create: False
@@ -58,7 +65,7 @@ prom-mdm-converter:
     endpoint: https://global.metrics.nsatc.net/
     # Put your account name in the following line
     #################
-    account: WCDDEV
+    account: WCDDev
     #################
     certFile: /secrets/certs_keys/mdm-cert.pem
     keyFile: /secrets/certs_keys/mdm-key.pem
@@ -112,3 +119,59 @@ prom-mdm-converter:
       ALERTS:
 
 
+prometheus-operator:
+  kubelet:
+    serviceMonitor:
+      https: false
+
+  kubeProxy:
+    enabled: false
+
+  prometheus:
+    prometheusSpec:
+      remoteWrite:
+      - url: "http://microservices-academy-metrics-prom-mdm-converter/receive"
+
+  additionalPrometheusRules:
+  - name: microservices-academy-metrics-rules
+    groups:
+  ## The following rules are cpu/memory percent by requests/limits, scaled by 1000.
+  ## Example: 0.619 (represents 61.9% usage) will be shown as 619
+    - name: microservices-academy-metrics.kubelets.rules.extension
+      rules:
+      - record: pod:cpu_usage_percent_by_request_scaled
+        expr: sum by (pod_name, namespace) (rate(container_cpu_usage_seconds_total{image!="",container_name!="POD"}[1m])) / sum by (pod_name, namespace) (label_join(kube_pod_container_resource_requests_cpu_cores,  "pod_name", "", "pod" )) * 1000
+      - record: pod:cpu_usage_percent_by_limit_scaled
+        expr: sum by (pod_name, namespace) (rate(container_cpu_usage_seconds_total{image!="",container_name!="POD"}[1m])) / sum by (pod_name, namespace) (label_join(kube_pod_container_resource_limits_cpu_cores,  "pod_name", "", "pod" )) * 1000
+      - alert: MicroservicesAcademyKubePodCPUHigh
+        annotations:
+          message: Pod {{`{{ $labels.namespace }}`}}/{{`{{ $labels.pod_name }}`}} is consuming more than 90% of it's CPU limit, for more than 15 minutes.
+        expr: pod:cpu_usage_percent_by_limit_scaled / 10 > 90
+        for: 15m
+        labels:
+          severity: warning
+      - alert: MicroservicesAcademyKubePodCPUHigh
+        annotations:
+          message: Pod {{`{{ $labels.namespace }}`}}/{{`{{ $labels.pod_name }}`}} is consuming more than 90% of it's CPU limit, for more than 45 minutes.
+        expr: pod:cpu_usage_percent_by_limit_scaled / 10 > 90
+        for: 45m
+        labels:
+          severity: critical
+      - record: pod:memory_usage_percent_by_request_scaled
+        expr: sum by (pod_name, namespace) (container_memory_working_set_bytes{image!="", container_name!="POD"}) / sum by (pod_name, namespace) (label_join(kube_pod_container_resource_requests_memory_bytes,  "pod_name", "", "pod" )) * 1000
+      - record: pod:memory_usage_percent_by_limit_scaled
+        expr: sum by (pod_name, namespace) (container_memory_working_set_bytes{image!="", container_name!="POD"}) / sum by (pod_name, namespace) (label_join(kube_pod_container_resource_limits_memory_bytes,  "pod_name", "", "pod" )) * 1000
+      - alert: MicroservicesAcademyKubePodMemoryHigh
+        annotations:
+          message: Pod {{`{{ $labels.namespace }}`}}/{{`{{ $labels.pod_name }}`}} is consuming more than 90% of it's memory limit, for more than 45 minutes.
+        expr: pod:memory_usage_percent_by_limit_scaled / 10 > 90
+        for: 15m
+        labels:
+          severity: warning
+      - alert: MicroservicesAcademyKubePodMemoryHigh
+        annotations:
+          message: Pod {{`{{ $labels.namespace }}`}}/{{`{{ $labels.pod_name }}`}} is consuming more than 90% of it's memory limit, for more than 45 minutes.
+        expr: pod:memory_usage_percent_by_limit_scaled / 10 > 90
+        for: 45m
+        labels:
+          severity: critical

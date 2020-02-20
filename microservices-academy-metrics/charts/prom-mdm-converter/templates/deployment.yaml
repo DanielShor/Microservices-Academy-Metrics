@@ -25,6 +25,7 @@ spec:
       labels:
         app: {{ template "prom-mdm-converter.name" . }}
         release: {{ .Release.Name }}
+        aadpodidbinding: {{ .Values.aadpodidbinding }}
     spec:
 {{- if eq .Values.genevaSecrets.mode "kvagent" }}
       initContainers:
