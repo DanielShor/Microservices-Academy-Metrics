@@ -9,8 +9,6 @@ prom-mdm-converter:
   # init containers
   genevaSecrets:
     mode: kvagent 
-    manual: # Must prepopulate secret manually
-      secretName: geneva-secret # Name of kubernetes secrets containing gcs.{crt,key}
 
   # See https://github.com/Hexadite/acs-keyvault-agent
   kvagent:
@@ -29,7 +27,7 @@ prom-mdm-converter:
     # don't download CA certs by default.
     download_cacerts: true
 
-    # Put your cert name in the following line
+    # Put your cert name in the following line instead of 'pfx-wcd-mds-gcs-stg'
     #################
     cert: pfx-wcd-mds-gcs-stg::mdm-cert.pem:mdm-key.pem
     #################
