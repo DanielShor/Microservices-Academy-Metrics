@@ -18,17 +18,17 @@ git clone https://github.com/DanielShor/Microservices-Academy-Metrics.git
 4. Install the Helm chart:
 ```
 // run the following command when you root path is the repo's folder
-helm upgrade microservices-academy-metrics --install microservices-academy-metrics  --namespace infra -f microservices-academy-metrics\microservices-academy-values.yaml
+helm upgrade microservices-academy-metrics --install microservices-academy-metrics  --namespace wdatp-infra-system -f microservices-academy-metrics\microservices-academy-values.yaml
 ```
 **Note**: This might take 1-2 minutes, since this is the first time you deploy Prometheus to your cluster, and there are few components to deploy.
 
-5. Look at what you have created by looking at all the pods in infra namespace by running the following command:
+5. Look at what you have created by looking at all the pods in wdatp-infra-system namespace by running the following command:
 ```
-kubectl get pod -n infra
+kubectl get pod -n wdatp-infra-system
 ```
 6. Look at Prometheus UI by using the following command:
 ```
-kubectl port-forward prometheus-microservices-academy-metr-prometheus-0 9090:9090 -n infra
+kubectl port-forward prometheus-microservices-academy-metr-prometheus-0 9090:9090 -n wdatp-infra-system
 ```
 7. Go to `http://localhost:9090/`
 - Click on all the tabs and take a quick look (start from Status sub-tabs)
